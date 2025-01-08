@@ -1,112 +1,164 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import getStarfield from "./vertex-earth/src/getStarfield.js";
+import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mx_hash_int_3 } from 'three/src/nodes/materialx/lib/mx_noise.js';
 
-import circleUrl from './vertex-earth/src/circle.png'
-import rainbowUrl from './vertex-earth/src/04_rainbow1k.jpg'
-import earthbumpUrl from './vertex-earth/src/01_earthbump1k.jpg'
-import earthspecUrl from './vertex-earth/src/02_earthspec1k.jpg'
+console.log("script.js working ok!!!");
+console.log("THREE: ", THREE);
 
 const canvas = document.querySelector('canvas.webgl');
+const sizes = getCanvasSize();
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 3.5);
-const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-//document.body.appendChild(renderer.domElement);
 
-const orbitCtrl = new OrbitControls(camera, renderer.domElement);
-orbitCtrl.enableDamping = true;
+const cameraDistance = 75;
+const fov = 50; //degree
+const aspect = sizes.width / sizes.height;
+const camera = new THREE.PerspectiveCamera(fov,aspect /*,0.1, 2000 */);
+//const camera = new THREE.PerspectiveCamera(fov,aspect, 1, 500);
+camera.position.z = 3;//cameraDistance;
 
-const textureLoader = new THREE.TextureLoader();
-const starSprite = textureLoader.load(circleUrl);
-const colorMap = textureLoader.load(rainbowUrl);
-const elevMap = textureLoader.load(earthbumpUrl);
-const alphaMap = textureLoader.load(earthspecUrl);
+var cameraAngle=(Math.PI * 2) * .5;
+var boxWidth = 50;
+var boxHeight = 20;
+var boxDepth = 50;
 
-const globeGroup = new THREE.Group();
-scene.add(globeGroup);
+//scene.fog = new THREE.Fog( 0x000000, this.cameraDistance-200, this.cameraDistance+550 );
 
-const geo = new THREE.IcosahedronGeometry(1, 10);
-const mat = new THREE.MeshBasicMaterial({ 
-  color: 0x202020,
-  wireframe: true,
- });
-const cube = new THREE.Mesh(geo, mat);
-globeGroup.add(cube);
+// this.particleGeometry = new THREE.BufferGeometry();
 
-const detail = 120;
-const pointsGeo = new THREE.IcosahedronGeometry(1, detail);
+// this.particleVertexShader = [
+//     "attribute vec3 color;",
+//     "attribute float opacity;",
+//     "varying vec4 vColor;",
+//     "void main()",
+//     "{",
+//     "vColor = vec4( color, opacity );", //     set color associated to vertex; use later in fragment shader.
+//     "vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+//     "gl_PointSize = 1.0;",
+//     "gl_Position = projectionMatrix * mvPosition;",
+//     "}"
+// ].join("\n");
 
-const vertexShader = `
-  uniform float size;
-  uniform sampler2D elevTexture;
+// this.particleFragmentShader = [
+//     "varying vec4 vColor;",     
+//     "void main()", 
+//     "{",
+//     "gl_FragColor = vColor;",
+//     "}"
+// ].join("\n");
 
-  varying vec2 vUv;
-  varying float vVisible;
+// this.shaderAttributes = {
+//     color: { type: 'c', value: []},
+//     opacity: {type: 'f', value: []}
+// };
+// this.shaderMaterial = new THREE.ShaderMaterial( {
+//     uniforms:       {},
+//     attributes:     this.shaderAttributes,
+//     vertexShader:   this.particleVertexShader,
+//     fragmentShader: this.particleFragmentShader,
+//     transparent:    true
+// });
 
-  void main() {
-    vUv = uv;
-    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-    float elv = texture2D(elevTexture, vUv).r;
-    vec3 vNormal = normalMatrix * normal;
-    vVisible = step(0.0, dot( -normalize(mvPosition.xyz), normalize(vNormal)));
-    mvPosition.z += 0.35 * elv;
-    gl_PointSize = size;
-    gl_Position = projectionMatrix * mvPosition;
-  }
-`;
-const fragmentShader = `
-  uniform sampler2D colorTexture;
-  uniform sampler2D alphaTexture;
+//const particlesGeometry = new THREE.SphereGeometry(1, 32, 32);
+const particlesGeometry = new THREE.PlaneGeometry(2,2,boxWidth,boxDepth);
+particlesGeometry.rotateX(Math.PI/2);
 
-  varying vec2 vUv;
-  varying float vVisible;
+let pointPos = particlesGeometry.getAttribute("position").array
 
-  void main() {
-    if (floor(vVisible + 0.1) == 0.0) discard;
-    float alpha = 1.0 - texture2D(alphaTexture, vUv).r;
-    vec3 color = texture2D(colorTexture, vUv).rgb;
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
-const uniforms = {
-  size: { type: "f", value: 4.0 },
-  colorTexture: { type: "t", value: colorMap },
-  elevTexture: { type: "t", value: elevMap },
-  alphaTexture: { type: "t", value: alphaMap }
-};
-const pointsMat = new THREE.ShaderMaterial({
-  uniforms: uniforms,
-  vertexShader,
-  fragmentShader,
-  transparent: true
+const maxAmpli = 0.5;
+for( var j = 0; j < boxDepth+1; j++){
+    const dcoef = j/boxDepth;
+    const ampli = Math.sin(dcoef*Math.PI)*maxAmpli;
+    const iOffset=j*(boxWidth+1)*3;
+    console.log("j: ", j, ", dcoef:", dcoef,", iOffset: ", iOffset);
+    for( var i = 0; i < boxWidth+1; /*boxWidth * boxDepth;*/ i++){
+        const wcoef = i/boxWidth;
+        const yV = Math.sin(wcoef*Math.PI*2)*ampli;
+        const indx = iOffset+(i*3)+1;
+        console.log("i: ", i, ", wcoef: ", wcoef, ", indx: ", indx);
+        pointPos[iOffset+(i*3)+1] = yV;
+    }
+}
+pointPos.needsUpdate = true;
+//particlesGeometry.updateProjectionMatrix();
+
+const particlesMaterial = new THREE.PointsMaterial({
+    size: 0.02,
+    sizeAttenuation: true
 });
 
-const points = new THREE.Points(pointsGeo, pointsMat);
-globeGroup.add(points);
+const particles = new THREE.Points(particlesGeometry, particlesMaterial);
 
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0x080820, 3);
-scene.add(hemiLight);
+scene.add(particles);
 
-const stars = getStarfield({ numStars:4500, sprite: starSprite });
-scene.add(stars);
+scene.add(camera);
 
-function animate() {
-  renderer.render(scene, camera);
-  globeGroup.rotation.y += 0.002;
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+});
 
-  requestAnimationFrame(animate);
-  orbitCtrl.update();
-};
+renderer.setSize(sizes.width, sizes.height,false);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+
+function animate(timeStamp = 0) {
+    requestAnimationFrame(animate);
+//    boxGroup.userData.update(timeStamp);
+//    composer.render(scene, camera);
+    renderer.render(scene,camera);
+    controls.update();
+}
+
 animate();
 
-window.addEventListener('resize', function () {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}, false);
+function getCanvasSize() {
+    const canvasFrame = document.querySelector('div.canvasFrame');
+//    const canvasFrameStyle = getComputedStyle(canvasFrame);
+//    const canvasFrameStyle = getComputedStyle(canvas);
+    return {
+            width: window.innerWidth
+        ,   height: window.innerHeight
+//            width:  document.body.clientWidth
+//        ,   height: document.body.clientHeight
 
-// https://discourse.threejs.org/t/earth-point-vertex-elevation/62689
+/* growing endlesssly */
+//            width:  document.body.scrollWidth
+//        ,   height: document.body.scrollHeight
+
+/* height growing endlesssly */
+//            width:  canvasFrame.clientWidth
+//       ,   height: canvasFrame.clientHeight
+
+/* height growing endlesssly on every resize, width only growing */
+//            width:  canvasFrame.scrollWidth
+//        ,   height: canvasFrame.scrollHeight
+
+
+/* height growing endlesssly */
+//            width:  canvasFrame.offsetWidth
+//        ,   height: canvasFrame.offsetHeight
+
+
+//            width:  canvasFrameStyle.width
+//        ,   height: canvasFrameStyle.height
+
+//            width:  canvas.scrollWidth
+//        ,   height: canvas.scrollHeight
+    };
+}
+
+function handleWindowResize() {
+    const canvasSize = getCanvasSize();
+    console.log("canvasSize: ", canvasSize);
+    camera.aspect = canvasSize.width / canvasSize.height ;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvasSize.width, canvasSize.height, false);
+}
+window.addEventListener("resize", handleWindowResize, false);
+
+
+
+
