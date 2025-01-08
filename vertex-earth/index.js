@@ -1,25 +1,23 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import getStarfield from "./vertex-earth/src/getStarfield.js";
-
-const canvas = document.querySelector('canvas.webgl');
+import { OrbitControls } from "jsm/controls/OrbitControls.js";
+import getStarfield from "./src/getStarfield.js";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
 camera.position.set(0, 0, 3.5);
-const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-//document.body.appendChild(renderer.domElement);
+document.body.appendChild(renderer.domElement);
 
 const orbitCtrl = new OrbitControls(camera, renderer.domElement);
 orbitCtrl.enableDamping = true;
 
 const textureLoader = new THREE.TextureLoader();
-const starSprite = textureLoader.load("./vertex-earth/src/circle.png");
-const colorMap = textureLoader.load("./vertex-earth/src/04_rainbow1k.jpg");
-const elevMap = textureLoader.load("./vertex-earth/src/01_earthbump1k.jpg");
-const alphaMap = textureLoader.load("./vertex-earth/src/02_earthspec1k.jpg");
+const starSprite = textureLoader.load("./src/circle.png");
+const colorMap = textureLoader.load("./src/04_rainbow1k.jpg");
+const elevMap = textureLoader.load("./src/01_earthbump1k.jpg");
+const alphaMap = textureLoader.load("./src/02_earthspec1k.jpg");
 
 const globeGroup = new THREE.Group();
 scene.add(globeGroup);
