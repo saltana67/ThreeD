@@ -65,22 +65,27 @@ particlesGeometry.rotateX(Math.PI/2);
 
 let pointPos = particlesGeometry.getAttribute("position").array
 
-const maxAmpli = 0.5;
-for( var j = 0; j < boxDepth+1; j++){
-    const dcoef = j/boxDepth;
-    const ampli = Math.sin(dcoef*Math.PI)*maxAmpli;
-    const iOffset=j*(boxWidth+1)*3;
-    console.log("j: ", j, ", dcoef:", dcoef,", iOffset: ", iOffset);
-    for( var i = 0; i < boxWidth+1; /*boxWidth * boxDepth;*/ i++){
-        const wcoef = i/boxWidth;
-        const yV = Math.sin(wcoef*Math.PI*2)*ampli;
-        const indx = iOffset+(i*3)+1;
-        console.log("i: ", i, ", wcoef: ", wcoef, ", indx: ", indx);
-        pointPos[iOffset+(i*3)+1] = yV;
+function updateBoxValues(coeff=1.0){
+    const maxAmpli = 0.5*coeff;
+    for( var j = 0; j < boxDepth+1; j++){
+        const dcoef = j/boxDepth;
+        const ampli = Math.sin(dcoef*Math.PI)*maxAmpli;
+        const iOffset=j*(boxWidth+1)*3;
+        //console.log("j: ", j, ", dcoef:", dcoef,", iOffset: ", iOffset);
+        for( var i = 0; i < boxWidth+1; /*boxWidth * boxDepth;*/ i++){
+            const wcoef = i/boxWidth;
+            const yV = Math.sin(wcoef*Math.PI*2)*ampli;
+            const indx = iOffset+(i*3)+1;
+            //console.log("i: ", i, ", wcoef: ", wcoef, ", indx: ", indx);
+            pointPos[iOffset+(i*3)+1] = yV;
+        }
     }
+    //pointPos.needsUpdate = true; 
+    particlesGeometry.getAttribute("position").needsUpdate = true;
 }
-pointPos.needsUpdate = true;
-//particlesGeometry.updateProjectionMatrix();
+
+updateBoxValues(0);
+
 
 const particlesMaterial = new THREE.PointsMaterial({
     size: 0.02,
@@ -104,13 +109,24 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.1;
 
+const theClock = new THREE.Clock();
+
 function animate(timeStamp = 0) {
     requestAnimationFrame(animate);
 //    boxGroup.userData.update(timeStamp);
 //    composer.render(scene, camera);
+    //console.log("timeStamp: ", timeStamp, ", Math.sin(timeStamp): ", Math.sin(timeStamp));
+    //console.log("theClock.elapsedTime():", theClock.getElapsedTime());
+    const et = theClock.getElapsedTime();
+    const elp = (et/2)*Math.PI;
+    //console.log("elp:", elp);
+    const elpSin = Math.sin(elp);
+    //console.log("elpSin:", elpSin);
+    updateBoxValues(elpSin);
     renderer.render(scene,camera);
     controls.update();
 }
+theClock.start();
 
 animate();
 
