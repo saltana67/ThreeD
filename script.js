@@ -2,6 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import getStarfield from "./vertex-earth/src/getStarfield.js";
 
+import circleUrl from './vertex-earth/src/circle.png'
+import rainbowUrl from './vertex-earth/src/04_rainbow1k.jpg'
+import earthbumpUrl from './vertex-earth/src/01_earthbump1k.jpg'
+import earthspecUrl from './vertex-earth/src/02_earthspec1k.jpg'
+
 const canvas = document.querySelector('canvas.webgl');
 
 const scene = new THREE.Scene();
@@ -16,10 +21,10 @@ const orbitCtrl = new OrbitControls(camera, renderer.domElement);
 orbitCtrl.enableDamping = true;
 
 const textureLoader = new THREE.TextureLoader();
-const starSprite = textureLoader.load("./vertex-earth/src/circle.png");
-const colorMap = textureLoader.load("./vertex-earth/src/04_rainbow1k.jpg");
-const elevMap = textureLoader.load("./vertex-earth/src/01_earthbump1k.jpg");
-const alphaMap = textureLoader.load("./vertex-earth/src/02_earthspec1k.jpg");
+const starSprite = textureLoader.load(circleUrl);
+const colorMap = textureLoader.load(rainbowUrl);
+const elevMap = textureLoader.load(earthbumpUrl);
+const alphaMap = textureLoader.load(earthspecUrl);
 
 const globeGroup = new THREE.Group();
 scene.add(globeGroup);
