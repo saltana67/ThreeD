@@ -1,9 +1,13 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import Stats from 'three/examples/jsm/libs/stats.module'
 import { mx_hash_int_3 } from 'three/src/nodes/materialx/lib/mx_noise.js';
 
 console.log("script.js working ok!!!");
 console.log("THREE: ", THREE);
+
+const stats = Stats()
+document.body.appendChild(stats.dom)
 
 const canvas = document.querySelector('canvas.webgl');
 const sizes = getCanvasSize();
@@ -128,8 +132,15 @@ vYValue = position.y ;
 float maxY = 0.35;
 vec3 encomCyan   = vec3(0, 0.93333, 0.93333);
 vec3 encomYellow = vec3(1, 0.8, 0);
-float yColorWeight = mix(0.0,1.0,vYValue/maxY);
-vec3 yColor = mix(encomCyan,encomYellow,yColorWeight);
+vec3 encomLowBlue = vec3(0, 0.3, 0.93333);
+float yColorWeightHigh = mix(0.0,1.0,vYValue/maxY);
+float yColorWeightLow  = mix(0.0,1.0,(-vYValue)/maxY);
+vec3 yColorHigh = mix(encomCyan,encomYellow,yColorWeightHigh);
+vec3 yColorLow  = mix(encomCyan,encomLowBlue,yColorWeightLow);
+vec3 yColor0 = encomCyan*(1.0-abs(sign(vYValue)));
+vec3 yColor1 = yColorHigh*clamp(sign(vYValue),0.0,1.0);
+vec3 yColor2 = yColorLow*clamp(-sign(vYValue),0.0,1.0);
+vec3 yColor = yColor0+yColor1+yColor2;
 vec4 diffuseColor = vec4( yColor, opacity );
 diffuseColor = diffuseColor * 1.0;
 `;
@@ -208,6 +219,7 @@ function animate(timeStamp = 0) {
     updateBoxValues(elpSin);
     renderer.render(scene,camera);
     controls.update();
+    stats.update();
 }
 theClock.start();
 
