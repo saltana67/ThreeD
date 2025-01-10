@@ -89,21 +89,80 @@ updateBoxValues(0);
 const particlesMaterial = new THREE.ShaderMaterial({
     vertexShader: THREE.ShaderLib.points.vertexShader,
     fragmentShader: THREE.ShaderLib.points.fragmentShader,
-    uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.points.uniforms)
+    uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.points.uniforms),
+//    isPointsMaterial: true,
+    onBeforeCompile: (shader) => {
+        console.log("shader:", shader);
+//        shader.useColor = true;
+//        shader.color = new THREE.Color( 0x00eeee );
+
+        const vertexMainPattern = /*glsl*/`void main() {`;
+        const vertexDefinevYValue = /*glsl*/
+`
+varying float vYValue;
+`;
+        shader.vertexShader = shader.vertexShader.replace(
+            vertexMainPattern,
+            vertexDefinevYValue + vertexMainPattern
+        );
+
+        const vertexSaveYValue = /*glsl*/
+`
+vYValue = position.y ;
+`;
+        shader.vertexShader = shader.vertexShader.replace(
+            vertexMainPattern,
+            vertexMainPattern + vertexSaveYValue
+        );
+
+        const fragmentMainPattern = /* glsl */`void main() {`;
+        shader.fragmentShader = shader.fragmentShader.replace(
+            fragmentMainPattern,
+            vertexDefinevYValue + fragmentMainPattern
+        );
+    
+
+        const fragmentPattern = /* glsl */`vec4 diffuseColor = vec4( diffuse, opacity );`
+        const fragmentMain    = /* glsl */
+`
+float maxY = 0.35;
+vec3 encomCyan   = vec3(0, 0.93333, 0.93333);
+vec3 encomYellow = vec3(1, 0.8, 0);
+float yColorWeight = mix(0.0,1.0,vYValue/maxY);
+vec3 yColor = mix(encomCyan,encomYellow,yColorWeight);
+vec4 diffuseColor = vec4( yColor, opacity );
+diffuseColor = diffuseColor * 1.0;
+`;
+        shader.fragmentShader = shader.fragmentShader.replace(
+            fragmentPattern,
+            fragmentMain// + fragmentMain
+        );
+    }
 });
 
-Object.defineProperty(particlesMaterial, "size", { value: 5, writable: true });
+//Object.defineProperty(particlesMaterial, "size", { value: 5, writable: true });
 //Object.defineProperty(particlesMaterial, "sizeAttenuation", { value: true, writable: true });
+//Object.defineProperty(particlesMaterial, "useColor", { value: true, writable: true });
 //Object.defineProperty(particlesMaterial, "isPointsMaterial", { value: true, writable: true });
+//Object.defineProperty(particlesMaterial, "color", { value: new THREE.Color( 0xfff0f0 ), writable: true });
+//particlesMaterial.color = new THREE.Color( 0xfff0f0 );
 
 //particlesMaterial.isPointsMaterial = true;
 //particlesMaterial.size = 2.0;
 particlesMaterial.sizeAttenuation = true;
-
-console.log("particlesMaterial.uniforms.size.value:",particlesMaterial.uniforms.size.value);
+//particlesMaterial.color = new THREE.Color( 0xff7f7f );
 particlesMaterial.uniforms["size"].value=5;
+console.log("particlesMaterial.uniforms.size.value:",particlesMaterial.uniforms.size.value);
+//particlesMaterial.uniforms["diffuse"].value=new THREE.Color( 0x00eeee );
+//particlesMaterial.uniforms["color"] = { value: new THREE.Color( 0x00eeee ), writable: true };
+//particlesMaterial.color = new THREE.Color( 0x00eeee );
+//particlesMaterial.useColor = true;
+//encom cyan   0x00eeee (0,238,238) (0, 0.93333, 0.93333)
+//encom yellow 0xffcc00 (255,204,0) (1, 0.8, 0);
 //particlesMaterial.uniforms["scale"].value=1;
-//particlesMaterial.needsUpdate = true;
+//particlesMaterial.wireframe = false;
+
+particlesMaterial.needsUpdate = true;
 
 const particlesMaterial2 = new THREE.PointsMaterial({
     size: 0.01,
