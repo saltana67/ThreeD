@@ -86,13 +86,37 @@ function updateBoxValues(coeff=1.0){
 
 updateBoxValues(0);
 
-
-const particlesMaterial = new THREE.PointsMaterial({
-    size: 0.02,
-    sizeAttenuation: true
+const particlesMaterial = new THREE.ShaderMaterial({
+    vertexShader: THREE.ShaderLib.points.vertexShader,
+    fragmentShader: THREE.ShaderLib.points.fragmentShader,
+    uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.points.uniforms)
 });
 
+Object.defineProperty(particlesMaterial, "size", { value: 5, writable: true });
+//Object.defineProperty(particlesMaterial, "sizeAttenuation", { value: true, writable: true });
+//Object.defineProperty(particlesMaterial, "isPointsMaterial", { value: true, writable: true });
+
+//particlesMaterial.isPointsMaterial = true;
+//particlesMaterial.size = 2.0;
+particlesMaterial.sizeAttenuation = true;
+
+console.log("particlesMaterial.uniforms.size.value:",particlesMaterial.uniforms.size.value);
+particlesMaterial.uniforms["size"].value=5;
+//particlesMaterial.uniforms["scale"].value=1;
+//particlesMaterial.needsUpdate = true;
+
+const particlesMaterial2 = new THREE.PointsMaterial({
+    size: 0.01,
+    sizeAttenuation: true,
+    onBeforeCompile: (shader) => {
+        console.log("shader:", shader);
+    }
+});
+
+console.log("particlesMaterial:", particlesMaterial);
+
 const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+console.log("particles:", particles);
 
 scene.add(particles);
 
