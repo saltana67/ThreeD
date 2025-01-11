@@ -42,6 +42,7 @@ let terrainUniforms = {
   topColor: {value: encomYellow.clone()},
   zeroColor: {value: encomCyan.clone()},
   bottomColor: {value: encomLowBlue.clone()},
+//  opacity: {value: 0.2},
   offlineOpacity: {value: 0.2},
   lineOpacity: {value: 0.5},
   lineThickness: {value: 1},
@@ -58,9 +59,7 @@ let m = new THREE.MeshLambertMaterial({
     shader.uniforms.boxMax = terrainUniforms.max;
     shader.uniforms.bottomColor = terrainUniforms.bottomColor;
     shader.uniforms.topColor = terrainUniforms.topColor;
-    //shader.uniforms.opacity = terrainUniforms.opacity;
     shader.uniforms.offlineOpacity = terrainUniforms.offlineOpacity;
-    shader.uniforms.lineOpacity = terrainUniforms.lineOpacity;
     shader.uniforms.lineThickness = terrainUniforms.lineThickness;
     shader.uniforms.lineSpacing = terrainUniforms.lineSpacing;
     shader.uniforms.lineOffset = terrainUniforms.lineOffset;
@@ -90,6 +89,9 @@ let m = new THREE.MeshLambertMaterial({
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), o);
           col = mix(lineCol, gl_FragColor.rgb, line);
           col = lineCol;
+          float lineOp    = (1.-line)*opacity;
+          float offlineOp = line*opacity*offlineOpacity;
+          opa = lineOp + offlineOp;
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), line);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), 1.-line);
           //opa = 1.-(line*0.85);
@@ -114,8 +116,8 @@ let m = new THREE.MeshLambertMaterial({
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), o);
           //col = mix(lineCol, gl_FragColor.rgb, line);
           col = lineCol;
-          float lineOp    = (1.-line)*offlineOpacity;
-          float offlineOp = line*offlineOpacity*(1.-lineOpacity);
+          float lineOp    = (1.-line)*opacity;
+          float offlineOp = line*opacity*offlineOpacity;
           opa = lineOp + offlineOp;
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), op);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), line);
@@ -135,7 +137,6 @@ let m = new THREE.MeshLambertMaterial({
       uniform vec3 bottomColor;
       uniform float showPositionColors;
       uniform float lineThickness;
-      uniform float lineOpacity;
       uniform float offlineOpacity;
       uniform vec3 lineSpacing;
       uniform vec3 lineOffset;
@@ -172,9 +173,23 @@ gui.add(terrainUniforms.showPositionColors, "value").name("position colors");
 gui.addColor(terrainUniforms.topColor, "value").name("top color");
 gui.addColor(terrainUniforms.zeroColor, "value").name("zero color");
 gui.addColor(terrainUniforms.bottomColor, "value").name("bottom color");
-gui.add(terrainUniforms.offlineOpacity, "value", 0.1, 1).step(0.05).name("opacity");
+gui.add(m, "opacity", 0.1, 1).step(0.05).name("opacity")
+/*     
+    .onFinishChange( event => {
+        
+	    // event.object     // object that was modified
+	    // event.property   // string, name of property
+	    // event.value      // new value of controller
+	    // event.controller // controller that was modified
+        
+        console.log("onFinishChange: event: ", event);
+        console.log("onFinishChange: m.opacity: ", m.opacity);
+        //m.needsUpdate = true;
+    })
+*/
+;
 let linesFolder = gui.addFolder("lines");
-linesFolder.add(terrainUniforms.lineOpacity, "value", 0, 1).step(0.05).name("line opacity");
+linesFolder.add(terrainUniforms.offlineOpacity, "value", 0, 1).step(0.05).name("offline opacity");
 linesFolder.add(terrainUniforms.lineThickness, "value", 0.1, 5).step(0.1).name("line thickness");
 linesFolder.add(terrainUniforms.lineSpacing.value, "x", 0.1, 50).step(0.1).name("line spacing X");
 linesFolder.add(terrainUniforms.lineOffset.value, "x", -10.0, 10.0).step(0.5).name("line offset X");
