@@ -31,13 +31,19 @@ for(let i = 0; i < uv.count; i++){
 }
 g.computeVertexNormals();
 
+const encomCyan   = new THREE.Color(0, 0.93333, 0.93333);
+const encomYellow = new THREE.Color(1, 0.8, 0);
+const encomLowBlue = new THREE.Color(0, 0.3, 0.93333);
+
 let terrainUniforms = {
   min: {value: new THREE.Vector3()},
   max: {value: new THREE.Vector3()},
   showPositionColors: {value: false},
-  topColor: {value: new THREE.Color(1, 1, 0)},
-  zeroColor: {value: new THREE.Color(0, 1, 0)},
-  bottomColor: {value: new THREE.Color(0, 1, 1)},
+  topColor: {value: encomYellow.clone()},
+  zeroColor: {value: encomCyan.clone()},
+  bottomColor: {value: encomLowBlue.clone()},
+  offlineOpacity: {value: 0.2},
+  lineOpacity: {value: 0.5},
   lineThickness: {value: 1},
   lineSpacing: {value: new THREE.Vector3(5.,5.,5.)},
   lineOffset: {value: new THREE.Vector3(0.,0.,0.)}
@@ -52,6 +58,9 @@ let m = new THREE.MeshLambertMaterial({
     shader.uniforms.boxMax = terrainUniforms.max;
     shader.uniforms.bottomColor = terrainUniforms.bottomColor;
     shader.uniforms.topColor = terrainUniforms.topColor;
+    //shader.uniforms.opacity = terrainUniforms.opacity;
+    shader.uniforms.offlineOpacity = terrainUniforms.offlineOpacity;
+    shader.uniforms.lineOpacity = terrainUniforms.lineOpacity;
     shader.uniforms.lineThickness = terrainUniforms.lineThickness;
     shader.uniforms.lineSpacing = terrainUniforms.lineSpacing;
     shader.uniforms.lineOffset = terrainUniforms.lineOffset;
@@ -83,7 +92,7 @@ let m = new THREE.MeshLambertMaterial({
           col = lineCol;
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), line);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), 1.-line);
-          opa = 1.-(line*0.85);
+          //opa = 1.-(line*0.85);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), lineCol);
         }
         gl_FragColor = vec4( col, opa);
@@ -105,21 +114,29 @@ let m = new THREE.MeshLambertMaterial({
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), o);
           //col = mix(lineCol, gl_FragColor.rgb, line);
           col = lineCol;
+          float lineOp    = (1.-line)*offlineOpacity;
+          float offlineOp = line*offlineOpacity*(1.-lineOpacity);
+          opa = lineOp + offlineOp;
+          //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), op);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), line);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), 1.-line);
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), 1.-(line*0.75));
-          opa = 1.-(line*0.95);
+          //opa = 1.-(line*0.95);
+          //opa = mix(lineOpacity,min(opacity,lineOpacity),line);
+          //opa = opacity;
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), lineCol);
         }
         gl_FragColor = vec4( col, opa);
     `;
     shader.fragmentShader = `
-    	uniform vec3 boxMin;
+      uniform vec3 boxMin;
       uniform vec3 boxMax;
       uniform vec3 topColor;
       uniform vec3 bottomColor;
       uniform float showPositionColors;
       uniform float lineThickness;
+      uniform float lineOpacity;
+      uniform float offlineOpacity;
       uniform vec3 lineSpacing;
       uniform vec3 lineOffset;
       varying vec3 vPos;
@@ -128,7 +145,7 @@ let m = new THREE.MeshLambertMaterial({
       `#include <dithering_fragment>`,
       xzGridFragment
     );
-    //console.log(shader.fragmentShader);
+    console.log("shader:",shader);
   }
 });
 m.defines = {"USE_UV":""};
@@ -153,8 +170,11 @@ scene.add(marker);
 let gui = new GUI();
 gui.add(terrainUniforms.showPositionColors, "value").name("position colors");
 gui.addColor(terrainUniforms.topColor, "value").name("top color");
+gui.addColor(terrainUniforms.zeroColor, "value").name("zero color");
 gui.addColor(terrainUniforms.bottomColor, "value").name("bottom color");
+gui.add(terrainUniforms.offlineOpacity, "value", 0.1, 1).step(0.05).name("opacity");
 let linesFolder = gui.addFolder("lines");
+linesFolder.add(terrainUniforms.lineOpacity, "value", 0, 1).step(0.05).name("line opacity");
 linesFolder.add(terrainUniforms.lineThickness, "value", 0.1, 5).step(0.1).name("line thickness");
 linesFolder.add(terrainUniforms.lineSpacing.value, "x", 0.1, 50).step(0.1).name("line spacing X");
 linesFolder.add(terrainUniforms.lineOffset.value, "x", -10.0, 10.0).step(0.5).name("line offset X");
