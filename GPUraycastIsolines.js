@@ -58,6 +58,7 @@ let m = new THREE.MeshLambertMaterial({
   	shader.uniforms.boxMin = terrainUniforms.min;
     shader.uniforms.boxMax = terrainUniforms.max;
     shader.uniforms.bottomColor = terrainUniforms.bottomColor;
+    shader.uniforms.zeroColor = terrainUniforms.zeroColor;
     shader.uniforms.topColor = terrainUniforms.topColor;
     shader.uniforms.offlineOpacity = terrainUniforms.offlineOpacity;
     shader.uniforms.lineThickness = terrainUniforms.lineThickness;
@@ -111,7 +112,14 @@ let m = new THREE.MeshLambertMaterial({
           //coord = coord + lineOffset.xz;
           vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord) / lineThickness;
           float line = min(grid.x, min(grid.y,1.0));
-          vec3 lineCol = mix(bottomColor,topColor, col.y);
+          vec3 upperColor = mix(zeroColor,topColor, (col.y-0.5)*2.);
+          vec3 lowerColor = mix(zeroColor,bottomColor, -((col.y-0.5)*2.));
+          vec3 lineCol = lowerColor * clamp(-sign((col.y-0.5)),0.,1.);
+          lineCol = upperColor * clamp(sign((col.y-0.5)),0.,1.)
+                     + 
+                    lowerColor * clamp(-sign((col.y-0.5)),0.,1.)
+                    ;
+          //lineCol = mix(bottomColor,topColor, col.y);
           float o = sign(max(0.,line));
           //col = mix(vec3(0.,0.,0.),vec3(1.,1.,1.), o);
           //col = mix(lineCol, gl_FragColor.rgb, line);
@@ -134,6 +142,7 @@ let m = new THREE.MeshLambertMaterial({
       uniform vec3 boxMin;
       uniform vec3 boxMax;
       uniform vec3 topColor;
+      uniform vec3 zeroColor;
       uniform vec3 bottomColor;
       uniform float showPositionColors;
       uniform float lineThickness;
